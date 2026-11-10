@@ -25,13 +25,18 @@ def post(endpoint, body, key, opener=urllib.request.urlopen):
         })
     try:
         with opener(request, timeout=60) as response:
-            return json.load(response)
+            result = json.load(response)
+        if not isinstance(result, dict):
+            raise RuntimeError("Clocked returned an invalid response; no results are available.")
+        return result
     except urllib.error.HTTPError as exc:
         raise RuntimeError(f"Clocked returned HTTP {exc.code}; no results are available.") from None
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Clocked could not be reached ({exc.reason}); no results are available.") from None
     except (TimeoutError, OSError):
         raise RuntimeError("Clocked request failed or timed out; no results are available. Check the account before retrying.") from None
+    except (ValueError, UnicodeDecodeError):
+        raise RuntimeError("Clocked returned invalid JSON; no results are available.") from None
 
 
 def review(text, key, caller=post):
